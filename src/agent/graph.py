@@ -5,6 +5,7 @@ from langchain_openai import AzureChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from typing import Annotated
 from langgraph.graph.message import add_messages
+from langchain_core.runnables import RunnableConfig
 
 # State definition
 class State(TypedDict):
@@ -17,7 +18,7 @@ model = AzureChatOpenAI(
 )
 
 # Define the logic to call the model
-def call_model(state: State):
+def call_model(state: State, config: RunnableConfig):
 
     # Get summary if it exists
     summary = state.get("summary", "")
@@ -31,7 +32,7 @@ def call_model(state: State):
     else:
         messages = state["messages"]
     
-    response = model.invoke(messages)
+    response = model.invoke(messages, config)
     return {"messages": response}
 
 # Define summarization function
