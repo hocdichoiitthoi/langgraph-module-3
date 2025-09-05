@@ -42,9 +42,10 @@ app = workflow.compile()
 async def main():
     print(">>> Streaming response...\n")
 
-    input_state = {"messages": [HumanMessage(content="Viết code Python tính Fibonacci")]}
+    input_state = {"messages": [HumanMessage(content="Viết một đoạn giới thiệu ngắn về AI.")]}
 
     async for event in app.astream_events(input_state, version="v2"):
+    # Get chat model tokens from a particular node 
        if event["event"] == "on_chat_model_stream" and event['metadata'].get('langgraph_node','') == "chatbot":
            data=event["data"]
            print(data["chunk"].content, end="", flush=True)

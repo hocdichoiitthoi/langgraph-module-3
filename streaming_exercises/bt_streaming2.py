@@ -29,13 +29,13 @@ async def main():
     while True:
         user_input = input("Bạn: ")
         if user_input.lower() == "goodbye":
-            print("AI: ","bye, see you next time!")
+            print("AI: Bye, see you next time!", end="", flush=True)
             break
 
         config = {"configurable": {"thread_id": "1"}}
         input_state = {"messages": user_input}
         
-        print("AI: ")
+        print("AI: ", end="", flush=True)
         async for event in app.astream_events(input_state, config, version="v2"):
            if event["event"] == "on_chat_model_stream" and event['metadata'].get('langgraph_node','') == "chatbot":
               data=event["data"]
