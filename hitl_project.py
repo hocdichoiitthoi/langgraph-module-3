@@ -103,7 +103,7 @@ def read_pdf(path):
 
 async def main():
     # while True:
-        # user_input = input("Bạn: ")1
+        # user_input = input("Bạn: ")
         # if user_input.lower() == "exit":
             # break
         # print("Agent: ", end="", flush=True)
