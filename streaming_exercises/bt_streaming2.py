@@ -1,4 +1,4 @@
-from langchain_openai import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
 from langgraph.graph import StateGraph, START, END
 from typing_extensions import TypedDict, Annotated
 from typing import List
@@ -6,11 +6,22 @@ from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 import asyncio
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+api_key = os.getenv("AZURE_OPENAI_API_KEY")
+endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
 
 class State(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm = AzureChatOpenAI(
+    model="gpt-4.1", 
+    api_version="2025-01-01-preview",
+    temperature=0
+)
 
 def chatbot_node(state: State):
     response = llm.invoke(state["messages"])
