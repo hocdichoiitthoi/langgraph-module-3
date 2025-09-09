@@ -32,7 +32,8 @@ workflow.add_node("chatbot", chatbot_node)
 workflow.add_edge(START, "chatbot")
 workflow.add_edge("chatbot", END)
 memory=MemorySaver()
-app = workflow.compile(checkpointer=memory)
+app = workflow.compile(checkpointer=memory) 
+
 
 async def main():
     print(">>> Chatbot mini \n")
