@@ -52,7 +52,6 @@ async def main():
            if event["event"] == "on_chat_model_stream" and event['metadata'].get('langgraph_node','') == "chatbot":
               data=event["data"]
               print(data["chunk"].content, end="", flush=True)
-        print("")
 
 if __name__ == "__main__":
     asyncio.run(main())              
