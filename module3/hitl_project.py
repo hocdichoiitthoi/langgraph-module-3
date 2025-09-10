@@ -48,16 +48,11 @@ def summarize_doc(state: State):
     response = llm.invoke([HumanMessage(content=prompt)])
     return {"messages": [response]}
 
-# Node Human: duyệt hoặc chỉnh sửa
-def human_feedback(state: State):
-    choice = input("\nBạn có đồng ý với tóm tắt này không? (y/n): ")
-    '''while choice != "y" or choice != "n":
-        choice = input("Không hợp lệ, vui lòng nhập lại! (y/n): ")'''
-    if choice.lower() == "y":
+def human_feedback(state: State, approved: bool, feedback_text: str = ""):
+    if approved:
         return {"approved": True}
     else:
-        feedback = input("Hãy nhập phản hồi / chỉnh sửa mong muốn: ")
-        return {"messages": state["messages"] + [HumanMessage(content=f"Refine lại tóm tắt: {feedback}")], "approved": False}
+        return {"messages": state["messages"] + [HumanMessage(content=f"Refine lại tóm tắt: {feedback_text}")], "approved": False}
 
 # Node Save: lưu tóm tắt
 def save_summary(state: State):
@@ -69,7 +64,7 @@ def decide_next(state: State):
     if state["approved"] == True:
         return "save_summary"
     else:
-        return "human_feedback"
+        return "feedback"
 # ----------------------------
 # 3. Xây workflow
 # ----------------------------
@@ -88,33 +83,3 @@ graph.add_edge("save", END)
 
 memory = MemorySaver()
 app_graph = graph.compile(checkpointer=memory)
-
-# ----------------------------
-# 4. Chạy thử
-# ----------------------------
-
-'''def read_pdf(path):
-    text = ""
-    with open(path, "rb") as f:
-        reader = PyPDF2.PdfReader(f)
-        for page in reader.pages:
-            text += page.extract_text() + "\n"
-    return text'''
-
-async def main():
-    while True:
-        user_input = input("Bạn: ")
-        if user_input.lower() == "exit":
-            break
-        print("Agent: ", end="", flush=True)
-        # document = read_pdf("module3/files/LVW.pdf")
-        thread = {"configurable": {"thread_id": "1"}}
-        state = {"messages": [HumanMessage(content=user_input)], "approved": False}
-        async for event in app_graph.astream_events(state, thread, version="v2"):
-        # Bắt sự kiện streaming từ LLM
-            if event["event"] == "on_chat_model_stream" and event['metadata'].get('langgraph_node','') == "summarize":
-                data=event["data"]
-                print(data["chunk"].content, end="", flush=True)
-
-if __name__ == "__main__":
-    asyncio.run(main())
