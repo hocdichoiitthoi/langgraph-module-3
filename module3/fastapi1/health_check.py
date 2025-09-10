@@ -47,14 +47,9 @@ async def submit_feedback(request: SubmitFeedbackRequest):
     # Manually call the human_feedback function with the provided parameters
     feedback_output = human_feedback(current_state.values, request.approved, request.feedback_text)
     
-    # Invoke the graph from the 'feedback' node with the output of human_feedback
-    # and let it decide the next step (summarize again or save)
-    if request.approved:
-        # If approved, the graph will transition from feedback to save
-        result = app_graph.invoke(feedback_output, config=config, name="feedback")
-    else:
-        # If not approved, the graph will transition from feedback to summarize
-        result = app_graph.invoke(feedback_output, config=config, name="feedback")
+    # Invoke the graph with the output of human_feedback
+    # The graph will decide the next step (summarize again or save) based on the 'approved' flag
+    result = app_graph.invoke(feedback_output, config=config)
 
     # After invoking, the graph would have either re-summarized or saved.
     # We need to get the latest summary from the state.
