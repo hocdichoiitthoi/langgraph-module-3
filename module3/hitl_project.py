@@ -19,7 +19,7 @@ endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
 # ===============================
 class State(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
-    approved: bool
+    
 
 # ===============================
 # 2. Khai báo model
@@ -48,16 +48,22 @@ def summarize_doc(state: State):
     response = llm.invoke([HumanMessage(content=prompt)])
     return {"messages": [response]}
 
+def decide_next(state: State):
+    summ = state["messages"][-1].content
+    print("\n Current summary \n")
+    print(summ)
+    print("\n")
+    
+    choice = input("\nBạn có đồng ý với tóm tắt này không? (y/n): ")
+    if choice.lower() == "y":
+        return "save_summary"
+    else:
+        return "human_feedback"
+
 # Node Human: duyệt hoặc chỉnh sửa
 def human_feedback(state: State):
-    choice = input("\nBạn có đồng ý với tóm tắt này không? (y/n): ")
-    '''while choice != "y" or choice != "n":
-        choice = input("Không hợp lệ, vui lòng nhập lại! (y/n): ")'''
-    if choice.lower() == "y":
-        return {"approved": True}
-    else:
-        feedback = input("Hãy nhập phản hồi / chỉnh sửa mong muốn: ")
-        return {"messages": state["messages"] + [HumanMessage(content=f"Refine lại tóm tắt: {feedback}")], "approved": False}
+    feedback = input("Hãy nhập phản hồi / chỉnh sửa mong muốn: ")
+    return {"messages": [HumanMessage(content=f"Refine lại tóm tắt: {feedback}")]}
 
 # Node Save: lưu tóm tắt
 def save_summary(state: State):
@@ -65,11 +71,6 @@ def save_summary(state: State):
     print(state["messages"][-1].content)
     return {}
 
-def decide_next(state: State):
-    if state["approved"] == True:
-        return "save_summary"
-    else:
-        return "human_feedback"
 # ----------------------------
 # 3. Xây workflow
 # ----------------------------
@@ -87,7 +88,7 @@ graph.add_edge("feedback","summarize")
 graph.add_edge("save", END)
 
 memory = MemorySaver()
-app_graph = graph.compile(checkpointer=memory)
+app_graph = graph.compile(checkpointer=memory, interrupt_after=["summarize"])
 
 # ----------------------------
 # 4. Chạy thử
@@ -109,7 +110,7 @@ async def main():
         print("Agent: ", end="", flush=True)
         # document = read_pdf("module3/files/LVW.pdf")
         thread = {"configurable": {"thread_id": "1"}}
-        state = {"messages": [HumanMessage(content=user_input)], "approved": False}
+        state = {"messages": [HumanMessage(content=user_input)]}
         async for event in app_graph.astream_events(state, thread, version="v2"):
         # Bắt sự kiện streaming từ LLM
             if event["event"] == "on_chat_model_stream" and event['metadata'].get('langgraph_node','') == "summarize":
