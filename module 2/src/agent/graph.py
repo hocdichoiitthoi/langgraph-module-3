@@ -84,5 +84,3 @@ workflow.add_edge("conversation", END)
 # Compile1
 graph = workflow.compile()
 
-
-graph.invoke({"messages": [HumanMessage(content="Hello, how are you?")]})
