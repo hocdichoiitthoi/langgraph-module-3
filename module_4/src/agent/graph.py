@@ -61,13 +61,13 @@ sub_app2 = tg.compile()
 # -----------------------------
 # Supervisor Agent
 # -----------------------------
-def supervisor(state: GraphState) -> str:
+def supervisor(state: GraphState) -> dict:
     if not state.get("summary"):
-        return "summary_conversation"
+        return {"next": "summary_conversation"}
     elif not state.get("title"):
-        return "generate_title"
+        return {"next": "generate_title"}
     else:
-        return "val"
+        return {"next": "val"}
 
 # -----------------------------
 # Validation Agent (VAL)

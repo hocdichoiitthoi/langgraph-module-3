@@ -2,7 +2,7 @@ import asyncio
 from typing import Annotated, TypedDict
 import PyPDF2
 from langchain_openai import AzureChatOpenAI
-from langchain_core.messages import HumanMessage, AnyMessage
+from langchain_core.messages import HumanMessage, AnyMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
