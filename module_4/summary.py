@@ -42,18 +42,18 @@ llm = AzureChatOpenAI(
 #=== SUMMARY NODE ===
 
 @tool
-def generate_summary(state: GraphState):
+def generate_summary(state: dict):
     '''This node will summary a paragraph from the user input'''
     # Access the latest human message content as the text to summarize
     text_to_process = ""
     for message in state["messages"]:
-       if isinstance(message, HumanMessage) and not message.content.lower().startswith(("feedback summary:", "feedback title:")):
+       if isinstance(message, HumanMessage) and not message.content.lower().startswith("feedback summary:", "feedback_title"):
         text_to_process = message.content
         break
 
     # Access the latest feedback on the summary if available
     feedback_summary = ""
-    for message in reversed(state["messages"]):
+    for message in state["messages"]:
         if isinstance(message, HumanMessage) and message.content.lower().startswith("feedback summary:"):
             feedback_summary = message.content[len("feedback summary:"):].strip()
             break
@@ -70,12 +70,12 @@ def generate_summary(state: GraphState):
 #=== TITLE NODE ===
 
 @tool
-def generate_title(state: GraphState):
-    '''This node will add title based on paragraph or summary(if have)'''
+def generate_title(state: dict):
+    '''This node will add title based on paragraph'''
     # # Access the latest human message content as the original text
     text = ""
-    for message in reversed(state["messages"]):
-        if isinstance(message, HumanMessage) and not message.content.lower().startswith("feedback title:"):
+    for message in state["messages"]:
+        if isinstance(message, HumanMessage) and not message.content.lower().startswith("feedback_summary","feedback title:"):
            text = message.content
            break
 
@@ -83,7 +83,7 @@ def generate_title(state: GraphState):
 
     # Access the latest feedback on the title if available
     feedback_title = ""
-    for message in reversed(state["messages"]):
+    for message in state["messages"]:
         if isinstance(message, HumanMessage) and message.content.lower().startswith("feedback title:"):
             feedback_title = message.content[len("feedback title:"):].strip()
             break
@@ -98,7 +98,8 @@ def generate_title(state: GraphState):
 
 #=== SUPERVISOR NODE ===
 supervisor_prompt = """You are a supervisor agent.
-When asked to summarize and add title, call the generate_summary and generate_title tool.
+When asked to summarize and add title, call the generate_summary and generate_title tool,
+and then update the summary and title state.
 After that, send the result from both tools to val node.
 If the message state has a feedback that refines the summary (starts with "Feedback summary:"), then call the tool generate_summary to update the summary based on the feedback.
 If the message state has a feedback that refines the title (starts with "Feedback title:"), then call tool generate_title to update the title based on the feedback.
@@ -106,22 +107,21 @@ If the message state has a feedback that refines the title (starts with "Feedbac
 
 tools = [generate_summary, generate_title]
 llm_with_tools= llm.bind_tools(tools, parallel_tool_calls=False)
-def supervisor(state: GraphState):
+def supervisor(state: dict):
     title = state.get("title", "")
     summary = state.get("summary", "")
     response = llm_with_tools.invoke([SystemMessage(content=supervisor_prompt)] + state["messages"])
-    return {"messages": response, "summary":summary, "title": title}
+    return {"messages": response, "summary": summary, "title": title}
 
-def route_supervisor(state: GraphState) -> Literal["tools", "val"]:
+def route_supervisor(state: dict) -> Literal["tools", "val"]:
     latest_message = state["messages"][-1]
-    # Kiểm tra xem tin nhắn cuối cùng có chứa yêu cầu gọi tool không
     if hasattr(latest_message, "tool_calls") and latest_message.tool_calls:
         return "tools"
     else:
         return "val"
 
 #=== VAL NODE ===
-def val(state: GraphState):
+def val(state: dict):
    summary = state.get("summary","")
    title = state.get("title","")
 
@@ -148,7 +148,7 @@ def val(state: GraphState):
 
     return {"messages": messages_to_add}
 
-def route_val(state: GraphState) -> Literal["supervisor", "__end__"]:
+def route_val(state: dict) -> Literal["supervisor", "__end__"]:
     latest_message_content = state["messages"][-1].content.lower()
     if latest_message_content == "approved":
         return END
@@ -182,10 +182,14 @@ if __name__ == "__main__":
     if user_input.lower() == "exit":
       break
     input_state = {'messages':[HumanMessage(content=user_input)]}
+    config={"configurable": {"thread_id": "1"}}
     # The initial state should be just the user message.
     # The supervisor will handle routing based on the state.
     # Include a config dictionary with a configurable key containing the thread_id
-    final_state = app2.invoke(input_state, config={"configurable": {"thread_id": "1"}})
+    final_state = app2.invoke(input_state, config)
 
     print("\n=== Final State ===")
     print(final_state)
+    
+
+    
